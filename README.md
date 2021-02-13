@@ -1,7 +1,7 @@
 # Baker-blender-addon
 Addon to automate blender baking process
 
-If you find this addon useful you can donate to paypal. (Addon is free, this is voluntary)
+If you find this addon useful you can donate to paypal. (Addon is completly free, this is just if you want to support development)
+https://www.paypal.com/paypalme/radovanstastny
 
-`<link>` :https://www.paypal.com/paypalme/radovanstastny
 # Documentation comming soon!
