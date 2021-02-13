@@ -19,6 +19,13 @@
 
 import bpy
 
+
+# TODO:
+# Cleaner UI
+# More baking options
+# Baking from selected to active
+
+
 bl_info = {
     "name": "Baker",
     "author": "Radovan Stastny <radovan.stastny2004@gmail.com>",
@@ -57,13 +64,14 @@ class VIEW3D_PT_BAKER_bake(bpy.types.Panel):
         if bake_prop_grp.bake_metal:
             col.label(text="will only create texture for baking", icon='ERROR')
         col = self.layout.column(align=True)
-        col.label(text="Each bake change prefix", icon='INFO')
-        col.label(text="Same images will be overwritten")
+        col.label(text="Same images will be overwritten", icon='INFO')
         col = self.layout.column(align=True)
         col.prop(bake_prop_grp, "name_of_img")
         col = self.layout.column(align=True)
         col.prop(bake_prop_grp, "file_bake_output")
         col = self.layout.column(align=True)
+        self.layout.use_property_split = True
+        self.layout.use_property_decorate = False
         col.prop(bake_prop_grp, "baked_img_size")
         col = self.layout.column(align=True)
         col.prop(bake_prop_grp, "baking_samples")
@@ -80,7 +88,50 @@ class VIEW3D_PT_BAKER_bake(bpy.types.Panel):
         col.operator('mesh.autobake', icon='OUTLINER_OB_IMAGE')
 
 
-# Operators
+
+
+
+
+class VIEW3D_PT_BAKER_bake_submenu_advanced(bpy.types.Panel):
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_category = "Autobaking"
+    bl_label = "Advanced"
+    bl_parent_id = "VIEW3D_PT_BAKER_bake"
+
+
+
+
+    def draw(self, context):
+        bake_prop_grp = bpy.context.window_manager.bake_prop_grp
+
+        if bake_prop_grp.bake_diffuse or bake_prop_grp.bake_roughness or bake_prop_grp.bake_normal or bake_prop_grp.bake_metal:
+           col = self.layout.column(align=True)
+           self.layout.use_property_split = True
+           self.layout.use_property_decorate = False
+           col.label(text="Postfixes:")
+        if bake_prop_grp.bake_diffuse:
+            col = self.layout.column(align=True)
+            self.layout.use_property_split = True
+            self.layout.use_property_decorate = False
+            col.prop(bake_prop_grp, "bake_postfix_diffuse")
+        if bake_prop_grp.bake_roughness:
+            col = self.layout.column(align=True)
+            self.layout.use_property_split = True
+            self.layout.use_property_decorate = False
+            col.prop(bake_prop_grp, "bake_postfix_roughness")
+        if bake_prop_grp.bake_normal:
+            col = self.layout.column(align=True)
+            self.layout.use_property_split = True
+            self.layout.use_property_decorate = False
+            col.prop(bake_prop_grp, "bake_postfix_normal")
+        if bake_prop_grp.bake_metal:
+            col = self.layout.column(align=True)
+            self.layout.use_property_split = True
+            self.layout.use_property_decorate = False
+            col.prop(bake_prop_grp, "bake_postfix_metalness")
+
+
 # ---------------------------------------------------------------------------------------------------------------------#
 # Properities
 
@@ -90,6 +141,7 @@ class BakePropertyGroup(bpy.types.PropertyGroup):
     bake_roughness: bpy.props.BoolProperty(name="Roughness", default=False, description="Will bake roughness map")
     bake_normal: bpy.props.BoolProperty(name="Normal", default=False, description="Will bake normal map")
     bake_metal: bpy.props.BoolProperty(name="Metalness", default=False, description="Will create metalness map")
+
     delete_old_uvs: bpy.props.BoolProperty(name="Delete old UV's", default=False,
                                            description="Will delete all UV's but bake one")
     name_of_img: bpy.props.StringProperty(name="Prefix", default="My_baked_image",
@@ -101,9 +153,10 @@ class BakePropertyGroup(bpy.types.PropertyGroup):
     baking_samples: bpy.props.IntProperty(name="Bake samples", default=1, min=1, soft_max=512,
                                           max=2048, description="Baking samples, best to leave at 1")
     # Custom postfixes (feature later?)
-    """bake_postfix_diffuse: bpy.props.StringProperty(name="Diffuse postfix", default="_diffuse")
-    bake_postfix_roughness: bpy.props.StringProperty(name="Roughness postfix", default="_roughness")
-    bake_postfix_normal: bpy.props.StringProperty(name="Normal postfix", default="_normal")"""
+    bake_postfix_diffuse: bpy.props.StringProperty(name="Diffuse", default="_diffuse")
+    bake_postfix_roughness: bpy.props.StringProperty(name="Roughness", default="_roughness")
+    bake_postfix_normal: bpy.props.StringProperty(name="Normal", default="_normal")
+    bake_postfix_metalness: bpy.props.StringProperty(name="Metalness", default="_metalness")
 
     uv_map_name: bpy.props.StringProperty(
         description="if you already have baking uv map, write its name here."
@@ -119,7 +172,6 @@ class BakePropertyGroup(bpy.types.PropertyGroup):
         ],
         default='LIGHTMAP',
     )
-
 
 # BAKING OPERATOR
 # ---------------------------------------------------------------------------------------------------------------------#
@@ -189,6 +241,11 @@ class MESH_OT_autobaking(bpy.types.Operator):
         bpy.ops.object.editmode_toggle()
 
         # Variables
+        diffuse_postfix = bake_prop_grp.bake_postfix_diffuse
+        roughness_postfix = bake_prop_grp.bake_postfix_roughness
+        normal_postfix = bake_prop_grp.bake_postfix_normal
+        metal_postfix = bake_prop_grp.bake_postfix_metalness
+
         size = bake_prop_grp.baked_img_size
         name = bake_prop_grp.name_of_img
         img_type = ".png"
@@ -198,13 +255,13 @@ class MESH_OT_autobaking(bpy.types.Operator):
         suffixes = []
         suffixes.clear()
         if bake_prop_grp.bake_diffuse:
-            suffixes.append("_diffuse")
+            suffixes.append(diffuse_postfix)
         if bake_prop_grp.bake_roughness:
-            suffixes.append("_roughness")
+            suffixes.append(roughness_postfix)
         if bake_prop_grp.bake_normal:
-            suffixes.append("_normal")
+            suffixes.append(normal_postfix)
         if bake_prop_grp.bake_metal:
-            suffixes.append("_metalness")
+            suffixes.append(metal_postfix)
 
         # Create images and save them to file
         for suffix in suffixes:
@@ -249,32 +306,32 @@ class MESH_OT_autobaking(bpy.types.Operator):
 
         # Baking diffuse
         if bake_prop_grp.bake_diffuse:
-            assing_image(suffixes.index("_diffuse"))
+            assing_image(suffixes.index(diffuse_postfix))
             bpy.context.scene.cycles.bake_type = 'DIFFUSE'
             bpy.context.scene.render.bake.use_pass_direct = False
             bpy.context.scene.render.bake.use_pass_indirect = False
             bpy.ops.object.bake(type='DIFFUSE', save_mode='EXTERNAL')
             image_delete()
-            save_baked_image("_diffuse")
+            save_baked_image(diffuse_postfix)
 
         # Baking roughness
         if bake_prop_grp.bake_roughness:
-            assing_image(suffixes.index("_roughness"))
+            assing_image(suffixes.index(roughness_postfix))
             bpy.context.scene.cycles.bake_type = 'ROUGHNESS'
             bpy.ops.object.bake(type='ROUGHNESS', save_mode='EXTERNAL')
             image_delete()
-            save_baked_image("_roughness")
+            save_baked_image(roughness_postfix)
         # Baking normal
         if bake_prop_grp.bake_normal:
-            assing_image(suffixes.index("_normal"))
+            assing_image(suffixes.index(normal_postfix))
             bpy.context.scene.cycles.bake_type = 'NORMAL'
             bpy.ops.object.bake(type='NORMAL', save_mode='EXTERNAL')
             image_delete()
-            save_baked_image("_normal")
+            save_baked_image(normal_postfix)
         # Baking metalness
         if bake_prop_grp.bake_normal:
-            assing_image(suffixes.index("_metalness"))
-            save_baked_image("_metalness")
+            assing_image(suffixes.index(metal_postfix))
+            save_baked_image(metal_postfix)
 
         bpy.context.scene.cycles.samples = old_samples
 
@@ -300,7 +357,7 @@ class MESH_OT_autobaking(bpy.types.Operator):
 def register():
     # UI
     bpy.utils.register_class(VIEW3D_PT_BAKER_bake)
-
+    bpy.utils.register_class(VIEW3D_PT_BAKER_bake_submenu_advanced)
     # operators
 
     bpy.utils.register_class(MESH_OT_autobaking)
@@ -315,6 +372,7 @@ def register():
 def unregister():
     # UI
     bpy.utils.unregister_class(VIEW3D_PT_BAKER_bake)
+    bpy.utils.unregister_class(VIEW3D_PT_BAKER_bake_submenu_advanced)
 
     # Operators
     bpy.utils.unregister_class(MESH_OT_autobaking)
