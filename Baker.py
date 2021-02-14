@@ -206,19 +206,26 @@ class MESH_OT_autobaking(bpy.types.Operator):
         else:
             return False
 
+
     def execute(self, context):
 
-        # Checking if its possible to perform operator
+        # Define properties
+        bake_prop_grp = bpy.context.window_manager.bake_prop_grp
+
+        # Checking if its possible to perform operator using more user friendly error message than classmethod
         if bpy.context.object.type != "MESH":
             self.report({'ERROR'}, "You need to select a mesh ")
+            return {'CANCELLED'}
+
+        if not bake_prop_grp.bake_diffuse and not bake_prop_grp.bake_roughness and not bake_prop_grp.bake_normal and not bake_prop_grp.bake_metal and not bake_prop_grp.bake_ao:
+            self.report({'ERROR'}, "You need to select bake type")
             return {'CANCELLED'}
 
         if not bpy.context.object.data.materials.items():
             self.report({'ERROR'}, "You need to have at least one material on your object ")
             return {'CANCELLED'}
 
-        # Define properties
-        bake_prop_grp = bpy.context.window_manager.bake_prop_grp
+
         # UV map creation
         is_there_uv = False
         # Checking if there is UV map
