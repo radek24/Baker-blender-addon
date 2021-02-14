@@ -346,7 +346,7 @@ class MESH_OT_autobaking(bpy.types.Operator):
             image_delete()
             save_baked_image(normal_postfix)
         # Baking metalness
-        if bake_prop_grp.bake_normal:
+        if bake_prop_grp.bake_metal:
             assing_image(suffixes.index(metal_postfix))
             save_baked_image(metal_postfix)
 
