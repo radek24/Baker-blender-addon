@@ -61,10 +61,10 @@ class VIEW3D_PT_BAKER_bake(bpy.types.Panel):
         col.prop(bake_prop_grp, "bake_roughness")
         col.prop(bake_prop_grp, "bake_normal")
         col.prop(bake_prop_grp, "bake_metal")
-        col.prop(bake_prop_grp, "bake_ao")
-
+        # Info about broken metalness baking
         if bake_prop_grp.bake_metal:
-            col.label(text="will only create texture for baking", icon='ERROR')
+            col.label(text="Metalness will only create image", icon='ERROR')
+        col.prop(bake_prop_grp, "bake_ao")
 
         col = self.layout.column(align=True)
         col.label(text="Same images will be overwritten", icon='INFO')
