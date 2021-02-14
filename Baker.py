@@ -22,9 +22,11 @@ import bpy
 
 # TODO:
 # Cleaner UI
-# More baking options
-# Baking from selected to active
-
+# More baking options (combined)
+# Baking from selected to active #### IMPORTANT ####
+# Fix metalness baking #### SOMEHOW ####
+# Delete old materials and create one with baked textures
+# Are custom postfixes unnecessary? #### Maybe delete them ####
 
 bl_info = {
     "name": "Baker",
@@ -162,7 +164,7 @@ class BakePropertyGroup(bpy.types.PropertyGroup):
     bake_ao_samples: bpy.props.IntProperty(name="AO samples", default=128, min=1, soft_max=1024,
                                            max=2048, description="Baking samples for AO")
 
-    # Custom postfixes (feature later?)
+    # Custom postfixes
     bake_postfix_diffuse: bpy.props.StringProperty(name="Diffuse", default="_diffuse")
     bake_postfix_roughness: bpy.props.StringProperty(name="Roughness", default="_roughness")
     bake_postfix_normal: bpy.props.StringProperty(name="Normal", default="_normal")
