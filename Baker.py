@@ -61,8 +61,11 @@ class VIEW3D_PT_BAKER_bake(bpy.types.Panel):
         col.prop(bake_prop_grp, "bake_roughness")
         col.prop(bake_prop_grp, "bake_normal")
         col.prop(bake_prop_grp, "bake_metal")
+        col.prop(bake_prop_grp, "bake_ao")
+
         if bake_prop_grp.bake_metal:
             col.label(text="will only create texture for baking", icon='ERROR')
+
         col = self.layout.column(align=True)
         col.label(text="Same images will be overwritten", icon='INFO')
         col = self.layout.column(align=True)
@@ -81,15 +84,14 @@ class VIEW3D_PT_BAKER_bake(bpy.types.Panel):
         col.prop(bake_prop_grp, "unwrap_method")
         col = self.layout.column(align=True, )
         col.prop(bake_prop_grp, "delete_old_uvs")
+
         if bake_prop_grp.bake_metal:
             col.enabled = False
+            bake_prop_grp.delete_old_uvs = False
+
         col = self.layout.column(align=True)
         col.scale_y = 1.5
         col.operator('mesh.autobake', icon='OUTLINER_OB_IMAGE')
-
-
-
-
 
 
 class VIEW3D_PT_BAKER_bake_submenu_advanced(bpy.types.Panel):
@@ -99,17 +101,14 @@ class VIEW3D_PT_BAKER_bake_submenu_advanced(bpy.types.Panel):
     bl_label = "Advanced"
     bl_parent_id = "VIEW3D_PT_BAKER_bake"
 
-
-
-
     def draw(self, context):
         bake_prop_grp = bpy.context.window_manager.bake_prop_grp
 
         if bake_prop_grp.bake_diffuse or bake_prop_grp.bake_roughness or bake_prop_grp.bake_normal or bake_prop_grp.bake_metal:
-           col = self.layout.column(align=True)
-           self.layout.use_property_split = True
-           self.layout.use_property_decorate = False
-           col.label(text="Postfixes:")
+            col = self.layout.column(align=True)
+            self.layout.use_property_split = True
+            self.layout.use_property_decorate = False
+            col.label(text="Postfixes:")
         if bake_prop_grp.bake_diffuse:
             col = self.layout.column(align=True)
             self.layout.use_property_split = True
@@ -130,6 +129,13 @@ class VIEW3D_PT_BAKER_bake_submenu_advanced(bpy.types.Panel):
             self.layout.use_property_split = True
             self.layout.use_property_decorate = False
             col.prop(bake_prop_grp, "bake_postfix_metalness")
+        if bake_prop_grp.bake_ao:
+            col = self.layout.column(align=True)
+            self.layout.use_property_split = True
+            self.layout.use_property_decorate = False
+            col.prop(bake_prop_grp, "bake_postfix_ao")
+            col = self.layout.column(align=True)
+            col.prop(bake_prop_grp, "bake_ao_samples")
 
 
 # ---------------------------------------------------------------------------------------------------------------------#
@@ -141,6 +147,7 @@ class BakePropertyGroup(bpy.types.PropertyGroup):
     bake_roughness: bpy.props.BoolProperty(name="Roughness", default=False, description="Will bake roughness map")
     bake_normal: bpy.props.BoolProperty(name="Normal", default=False, description="Will bake normal map")
     bake_metal: bpy.props.BoolProperty(name="Metalness", default=False, description="Will create metalness map")
+    bake_ao: bpy.props.BoolProperty(name="AO", default=False, description="Will create AmbientOcclusion map")
 
     delete_old_uvs: bpy.props.BoolProperty(name="Delete old UV's", default=False,
                                            description="Will delete all UV's but bake one")
@@ -152,12 +159,15 @@ class BakePropertyGroup(bpy.types.PropertyGroup):
                                                description="Your images will be saved there")
     baking_samples: bpy.props.IntProperty(name="Bake samples", default=1, min=1, soft_max=512,
                                           max=2048, description="Baking samples, best to leave at 1")
+    bake_ao_samples: bpy.props.IntProperty(name="AO samples", default=128, min=1, soft_max=1024,
+                                           max=2048, description="Baking samples for AO")
+
     # Custom postfixes (feature later?)
     bake_postfix_diffuse: bpy.props.StringProperty(name="Diffuse", default="_diffuse")
     bake_postfix_roughness: bpy.props.StringProperty(name="Roughness", default="_roughness")
     bake_postfix_normal: bpy.props.StringProperty(name="Normal", default="_normal")
     bake_postfix_metalness: bpy.props.StringProperty(name="Metalness", default="_metalness")
-
+    bake_postfix_ao: bpy.props.StringProperty(name="AO", default="_AO")
     uv_map_name: bpy.props.StringProperty(
         description="if you already have baking uv map, write its name here."
                     " Otherwise UV map with this name will be created",
@@ -175,6 +185,7 @@ class BakePropertyGroup(bpy.types.PropertyGroup):
 
 # BAKING OPERATOR
 # ---------------------------------------------------------------------------------------------------------------------#
+
 
 class MESH_OT_autobaking(bpy.types.Operator):
     """will bake everything automatically, note that blender will freeze for a moment"""
@@ -245,6 +256,8 @@ class MESH_OT_autobaking(bpy.types.Operator):
         roughness_postfix = bake_prop_grp.bake_postfix_roughness
         normal_postfix = bake_prop_grp.bake_postfix_normal
         metal_postfix = bake_prop_grp.bake_postfix_metalness
+        ao_postfix = bake_prop_grp.bake_postfix_ao
+
 
         size = bake_prop_grp.baked_img_size
         name = bake_prop_grp.name_of_img
@@ -262,6 +275,8 @@ class MESH_OT_autobaking(bpy.types.Operator):
             suffixes.append(normal_postfix)
         if bake_prop_grp.bake_metal:
             suffixes.append(metal_postfix)
+        if bake_prop_grp.bake_ao:
+            suffixes.append(ao_postfix)
 
         # Create images and save them to file
         for suffix in suffixes:
@@ -333,6 +348,16 @@ class MESH_OT_autobaking(bpy.types.Operator):
             assing_image(suffixes.index(metal_postfix))
             save_baked_image(metal_postfix)
 
+        # Baking AO
+        if bake_prop_grp.bake_ao:
+            bpy.context.scene.cycles.samples = bake_prop_grp.bake_ao_samples
+            assing_image(suffixes.index(ao_postfix))
+            bpy.context.scene.cycles.bake_type = 'AO'
+            bpy.ops.object.bake(type='AO', save_mode='EXTERNAL')
+            image_delete()
+            save_baked_image(ao_postfix)
+            bpy.context.scene.cycles.samples = bake_prop_grp.baking_samples
+
         bpy.context.scene.cycles.samples = old_samples
 
         # Delete unused UV's
@@ -366,6 +391,8 @@ def register():
     # Properties
     bpy.utils.register_class(BakePropertyGroup)
     bpy.types.WindowManager.bake_prop_grp = bpy.props.PointerProperty(type=BakePropertyGroup)
+
+    # Vypíše do konzole tajnou zprávu :)
     print("I1C jsou borci")
 
 
