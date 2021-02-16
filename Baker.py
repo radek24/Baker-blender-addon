@@ -442,13 +442,13 @@ class MESH_OT_autobaking(bpy.types.Operator):
                     bpy.ops.mesh.uv_texture_remove()
         # Konec bloku, který zabral 2 hodiny :)
 
-        # Creating new material
+        # Creating material for baked textures
         if bake_prop_grp.create_new_mat:
             # Deleting materials
-            for mat in bpy.context.object.data.materials.items():
+            for material in bpy.context.object.data.materials.items():
                 bpy.ops.object.material_slot_remove()
 
-            # Adding material
+            # Creating material
             baked_material = bpy.data.materials.new(name="Baked_mat")
             baked_material.use_nodes = True
 
@@ -468,19 +468,19 @@ class MESH_OT_autobaking(bpy.types.Operator):
             if bake_prop_grp.bake_diffuse:
                 image_node = baked_material.node_tree.nodes[str(diffuse_postfix)]
                 image_node.location = (-500, 600)
-                image_node.image.colorspace_settings.name = 'Non-Color'
                 link(image_node.outputs[0], principled_node.inputs[0])
 
             if bake_prop_grp.bake_roughness:
                 image_node = baked_material.node_tree.nodes[str(roughness_postfix)]
                 # Setting location
                 image_node.location = (-500, 0)
-                # Setting colorspace
+                # Setting color space
                 image_node.image.colorspace_settings.name = 'Non-Color'
                 # connecting
                 link(image_node.outputs[0], principled_node.inputs[7])
 
             if bake_prop_grp.bake_normal:
+                # Creating normal map node
                 normal_converter = baked_material.node_tree.nodes.new('ShaderNodeNormalMap')
                 image_node = baked_material.node_tree.nodes[str(normal_postfix)]
                 normal_converter.location = (-200, -300)
