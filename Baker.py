@@ -20,12 +20,12 @@
 import bpy
 
 # TODO:
-# Progress bar                                                          #
+# Progress bar                                                          # propably imposible
 # Baking multiple objects at a time                                     #
 # More baking options (combined)                                        #
 # Baking from selected to active                                        #
 # Fix metalness baking                                                  # DONE
-# Delete old materials and create one with baked textures               #
+# Delete old materials and create one with baked textures               # DONE
 # Are custom postfixes unnecessary?                                     # Maybe delete them
 
 bl_info = {
