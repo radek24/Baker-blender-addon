@@ -20,7 +20,8 @@
 import bpy
 
 # TODO:
-# Cleaner UI                                                            #
+# Progress bar                                                          #
+# Baking multiple objects at a time                                     #
 # More baking options (combined)                                        #
 # Baking from selected to active                                        #
 # Fix metalness baking                                                  # DONE
@@ -40,7 +41,7 @@ bl_info = {
 
 
 # UI
-# -----------------------------------------------------------------------------------------------------------------------#
+# -------------------------------------------------------------------------------------------------------------------- #
 
 
 def menu_func(self, context):
@@ -85,8 +86,9 @@ class VIEW3D_PT_BAKER_bake(bpy.types.Panel):
         col.prop(bake_prop_grp, "unwrap_method")
         col = self.layout.column(align=True, )
         col.prop(bake_prop_grp, "delete_old_uvs")
-
-        if bake_prop_grp.bake_metal:
+        col = self.layout.column(align=True, )
+        col.prop(bake_prop_grp, "create_new_mat")
+        if bake_prop_grp.bake_metal and not bake_prop_grp.metalness_experimantal:
             col.enabled = False
             bake_prop_grp.delete_old_uvs = False
 
@@ -105,7 +107,7 @@ class VIEW3D_PT_BAKER_bake_submenu_advanced(bpy.types.Panel):
     def draw(self, context):
         bake_prop_grp = bpy.context.window_manager.bake_prop_grp
 
-        if bake_prop_grp.bake_diffuse\
+        if bake_prop_grp.bake_diffuse \
                 or bake_prop_grp.bake_roughness \
                 or bake_prop_grp.bake_normal \
                 or bake_prop_grp.bake_metal:
@@ -143,7 +145,7 @@ class VIEW3D_PT_BAKER_bake_submenu_advanced(bpy.types.Panel):
             col.prop(bake_prop_grp, "bake_ao_samples")
 
 
-# ---------------------------------------------------------------------------------------------------------------------#
+# -------------------------------------------------------------------------------------------------------------------- #
 # Properities
 
 
@@ -156,6 +158,8 @@ class BakePropertyGroup(bpy.types.PropertyGroup):
 
     metalness_experimantal: bpy.props.BoolProperty(name="Experimental metalness", default=False,
                                                    description="Will try to bake metalness map, checks docs for info")
+    create_new_mat: bpy.props.BoolProperty(name="Create new matterial", default=False,
+                                           description="Will create new material with baked images and delete old mat.")
 
     delete_old_uvs: bpy.props.BoolProperty(name="Delete old UV's", default=False,
                                            description="Will delete all UV's but bake one")
@@ -343,7 +347,6 @@ class MESH_OT_autobaking(bpy.types.Operator):
             bpy.ops.object.bake(type='DIFFUSE', save_mode='EXTERNAL')
             image_delete()
             save_baked_image(diffuse_postfix)
-
         # Baking roughness
         if bake_prop_grp.bake_roughness:
             assing_image(suffixes.index(roughness_postfix))
@@ -439,13 +442,69 @@ class MESH_OT_autobaking(bpy.types.Operator):
                     bpy.ops.mesh.uv_texture_remove()
         # Konec bloku, který zabral 2 hodiny :)
 
+        # Creating new material
+        if bake_prop_grp.create_new_mat:
+            # Deleting materials
+            for mat in bpy.context.object.data.materials.items():
+                bpy.ops.object.material_slot_remove()
+
+            # Adding material
+            baked_material = bpy.data.materials.new(name="Baked_mat")
+            baked_material.use_nodes = True
+
+            # Define link
+            link = baked_material.node_tree.links.new
+
+            # Material modification
+            principled_node = baked_material.node_tree.nodes['Principled BSDF']
+            # Adding all posible textures
+            for index in suffixes:
+                texture_node = baked_material.node_tree.nodes.new('ShaderNodeTexImage')
+                texture_node.label = str(index)
+                texture_node.name = str(index)
+                texture_node.image = bpy.data.images.load(path + name + index + img_type,
+                                                          check_existing=True)
+            # checking which textures were baked, accesing them and connecting them
+            if bake_prop_grp.bake_diffuse:
+                image_node = baked_material.node_tree.nodes[str(diffuse_postfix)]
+                image_node.location = (-500, 600)
+                image_node.image.colorspace_settings.name = 'Non-Color'
+                link(image_node.outputs[0], principled_node.inputs[0])
+
+            if bake_prop_grp.bake_roughness:
+                image_node = baked_material.node_tree.nodes[str(roughness_postfix)]
+                # Setting location
+                image_node.location = (-500, 0)
+                # Setting colorspace
+                image_node.image.colorspace_settings.name = 'Non-Color'
+                # connecting
+                link(image_node.outputs[0], principled_node.inputs[7])
+
+            if bake_prop_grp.bake_normal:
+                normal_converter = baked_material.node_tree.nodes.new('ShaderNodeNormalMap')
+                image_node = baked_material.node_tree.nodes[str(normal_postfix)]
+                normal_converter.location = (-200, -300)
+                image_node.image.colorspace_settings.name = 'Non-Color'
+                image_node.location = (-500, -300)
+                link(image_node.outputs[0], normal_converter.inputs[1])
+                link(normal_converter.outputs[0], principled_node.inputs[19])
+
+            if bake_prop_grp.bake_metal:
+                image_node = baked_material.node_tree.nodes[str(metal_postfix)]
+                image_node.location = (-500, 300)
+                image_node.image.colorspace_settings.name = 'Non-Color'
+                link(image_node.outputs[0], principled_node.inputs[4])
+
+            # Assign material to object
+            bpy.context.object.active_material = baked_material
+
         # Information
         self.report({'INFO'}, "Bake was successful, images were saved")
 
         return {'FINISHED'}
 
 
-# --------------------------------------------------------------------------------------------------------------------#
+# -------------------------------------------------------------------------------------------------------------------- #
 # Registration
 
 
