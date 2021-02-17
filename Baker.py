@@ -20,7 +20,7 @@
 import bpy
 
 # TODO:
-# Progress bar                                                          # propably imposible
+# Progress bar                                                          # probably impossible
 # Baking multiple objects at a time                                     #
 # More baking options (combined)                                        #
 # Baking from selected to active                                        #
@@ -196,7 +196,7 @@ class BakePropertyGroup(bpy.types.PropertyGroup):
             ('PLAINUV', "Unwrap", "Basic unwrap"),
             ('NONE', "None, preserve UV", "Use if you already have bake uv map"),
         ],
-        default='LIGHTMAP',
+        default='SMARTUV',
     )
 
 
@@ -302,13 +302,13 @@ class MESH_OT_autobaking(bpy.types.Operator):
         if bake_prop_grp.bake_ao:
             suffixes.append(ao_postfix)
 
-        # Create images and save them to file
+        # Create images and save them to file (weird name just so there isnt similar nodes)
         for suffix in suffixes:
-            bpy.data.images.new("test7854961", width=size, height=size)
-            bpy.data.images["test7854961"].filepath = path + name + suffix + img_type
-            bpy.data.images["test7854961"].file_format = 'PNG'
-            bpy.data.images["test7854961"].save()
-            img = bpy.data.images["test7854961"]
+            bpy.data.images.new("EiqlgubGMcfVLIiu", width=size, height=size)
+            bpy.data.images["EiqlgubGMcfVLIiu"].filepath = path + name + suffix + img_type
+            bpy.data.images["EiqlgubGMcfVLIiu"].file_format = 'PNG'
+            bpy.data.images["EiqlgubGMcfVLIiu"].save()
+            img = bpy.data.images["EiqlgubGMcfVLIiu"]
             bpy.data.images.remove(img)
 
         # Save image
@@ -484,7 +484,9 @@ class MESH_OT_autobaking(bpy.types.Operator):
                         # Get nodes
                         principled_node = curr_material.node_tree.nodes.get('Principled BSDF')
                         output_node = curr_material.node_tree.nodes.get("Material Output")
+                        # Link them back
                         link(principled_node.outputs[0], output_node.inputs[0])
+                        # Delete value node
                         node_to_delete_value = curr_material.node_tree.nodes.get("Metallic_Value")
                         curr_material.node_tree.nodes.remove(node_to_delete_value)
             image_delete()
