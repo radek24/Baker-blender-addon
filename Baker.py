@@ -223,6 +223,10 @@ class MESH_OT_autobaking(bpy.types.Operator):
         bake_prop_grp = bpy.context.window_manager.bake_prop_grp
 
         # Checking if its possible to perform operator using more user friendly error message than classmethod
+        if bpy.context.scene.render.engine != 'CYCLES':
+            self.report({'ERROR'}, "You need to be in Cycles render engine to bake")
+            return {'CANCELLED'}
+
         if bpy.context.object.type != "MESH":
             self.report({'ERROR'}, "You need to select a mesh ")
             return {'CANCELLED'}
