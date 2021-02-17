@@ -53,7 +53,7 @@ class VIEW3D_PT_BAKER_bake(bpy.types.Panel):
 
     def draw(self, context):
         col = self.layout.column(align=True)
-        bake_prop_grp = bpy.context.window_manager.bake_prop_grp
+        bake_prop_grp = context.window_manager.bake_prop_grp
         col.label(text="Bake type")
         col.prop(bake_prop_grp, "bake_diffuse")
         col.prop(bake_prop_grp, "bake_roughness")
@@ -100,7 +100,7 @@ class VIEW3D_PT_BAKER_bake_submenu_advanced(bpy.types.Panel):
     bl_parent_id = "VIEW3D_PT_BAKER_bake"
 
     def draw(self, context):
-        bake_prop_grp = bpy.context.window_manager.bake_prop_grp
+        bake_prop_grp = context.window_manager.bake_prop_grp
         col = self.layout.column(align=True)
         self.layout.use_property_split = True
         self.layout.use_property_decorate = False
@@ -212,7 +212,7 @@ class MESH_OT_autobaking(bpy.types.Operator):
     def poll(cls, context):
         objs = context.selected_objects
         if len(objs) != 0:
-            current_mode = bpy.context.object.mode
+            current_mode = context.object.mode
             return context.area.type == 'VIEW_3D' and current_mode == 'OBJECT'
         else:
             return False
@@ -220,14 +220,14 @@ class MESH_OT_autobaking(bpy.types.Operator):
     def execute(self, context):
 
         # Define properties
-        bake_prop_grp = bpy.context.window_manager.bake_prop_grp
+        bake_prop_grp = context.window_manager.bake_prop_grp
 
         # Checking if its possible to perform operator using more user friendly error message than classmethod
-        if bpy.context.scene.render.engine != 'CYCLES':
+        if context.scene.render.engine != 'CYCLES':
             self.report({'ERROR'}, "You need to be in Cycles render engine to bake")
             return {'CANCELLED'}
 
-        if bpy.context.object.type != "MESH":
+        if context.object.type != "MESH":
             self.report({'ERROR'}, "You need to select a mesh ")
             return {'CANCELLED'}
 
@@ -239,24 +239,24 @@ class MESH_OT_autobaking(bpy.types.Operator):
             self.report({'ERROR'}, "You need to select bake type")
             return {'CANCELLED'}
 
-        if not bpy.context.object.data.materials.items():
+        if not context.object.data.materials.items():
             self.report({'ERROR'}, "You need to have at least one material on your object ")
             return {'CANCELLED'}
 
         # UV map creation
         is_there_uv = False
         # Checking if there is UV map
-        for uv in bpy.context.object.data.uv_layers.items():
+        for uv in context.object.data.uv_layers.items():
             if uv[0] == bake_prop_grp.uv_map_name:
                 is_there_uv = True
 
         # Creating new uv map after it was determined that the isn't any
         if not is_there_uv:
-            bpy.context.object.data.uv_layers.new(name=bake_prop_grp.uv_map_name)
+            context.object.data.uv_layers.new(name=bake_prop_grp.uv_map_name)
 
         bpy.ops.object.editmode_toggle()
         # Activating Uv map
-        bpy.context.object.data.uv_layers[bake_prop_grp.uv_map_name].active = True
+        context.object.data.uv_layers[bake_prop_grp.uv_map_name].active = True
 
         bpy.ops.mesh.select_all(action='SELECT')
         # Unwrapping (selecting unwrap method)
@@ -321,7 +321,7 @@ class MESH_OT_autobaking(bpy.types.Operator):
 
         def assing_image(x_type):
 
-            for mat in bpy.context.object.data.materials.items():
+            for mat in context.object.data.materials.items():
                 image_texture_node = mat[1].node_tree.nodes.new('ShaderNodeTexImage')
                 image_texture_node.name = "bake image242425"
                 image_texture_node.label = "bake image242425"
@@ -335,13 +335,13 @@ class MESH_OT_autobaking(bpy.types.Operator):
 
         # Delete images from materials
         def image_delete():
-            for mat_ in bpy.context.object.data.materials.items():
+            for mat_ in context.object.data.materials.items():
                 node_to_delete = mat_[1].node_tree.nodes["bake image242425"]
                 mat_[1].node_tree.nodes.remove(node_to_delete)
 
         # Setting samples to accelerate baking process
-        old_samples = bpy.context.scene.cycles.samples
-        bpy.context.scene.cycles.samples = bake_prop_grp.baking_samples
+        old_samples = context.scene.cycles.samples
+        context.scene.cycles.samples = bake_prop_grp.baking_samples
 
         # setting metalness to 0
         if bake_prop_grp.disable_metal:
@@ -351,7 +351,7 @@ class MESH_OT_autobaking(bpy.types.Operator):
             materials_with_met_nodes = []
             # CONNECT VALUE TO IT
 
-            for curr_material in bpy.context.object.data.materials:
+            for curr_material in context.object.data.materials:
                 # Define link
                 link = curr_material.node_tree.links.new
                 # Find principled node
@@ -384,41 +384,41 @@ class MESH_OT_autobaking(bpy.types.Operator):
         # Baking diffuse
         if bake_prop_grp.bake_diffuse:
             assing_image(suffixes.index(diffuse_postfix))
-            bpy.context.scene.cycles.bake_type = 'DIFFUSE'
-            bpy.context.scene.render.bake.use_pass_direct = False
-            bpy.context.scene.render.bake.use_pass_indirect = False
+            context.scene.cycles.bake_type = 'DIFFUSE'
+            context.scene.render.bake.use_pass_direct = False
+            context.scene.render.bake.use_pass_indirect = False
             bpy.ops.object.bake(type='DIFFUSE', save_mode='EXTERNAL')
             image_delete()
             save_baked_image(diffuse_postfix)
         # Baking roughness
         if bake_prop_grp.bake_roughness:
             assing_image(suffixes.index(roughness_postfix))
-            bpy.context.scene.cycles.bake_type = 'ROUGHNESS'
+            context.scene.cycles.bake_type = 'ROUGHNESS'
             bpy.ops.object.bake(type='ROUGHNESS', save_mode='EXTERNAL')
             image_delete()
             save_baked_image(roughness_postfix)
         # Baking normal
         if bake_prop_grp.bake_normal:
             assing_image(suffixes.index(normal_postfix))
-            bpy.context.scene.cycles.bake_type = 'NORMAL'
+            context.scene.cycles.bake_type = 'NORMAL'
             bpy.ops.object.bake(type='NORMAL', save_mode='EXTERNAL')
             image_delete()
             save_baked_image(normal_postfix)
 
         # Baking AO
         if bake_prop_grp.bake_ao:
-            bpy.context.scene.cycles.samples = bake_prop_grp.bake_ao_samples
+            context.scene.cycles.samples = bake_prop_grp.bake_ao_samples
             assing_image(suffixes.index(ao_postfix))
-            bpy.context.scene.cycles.bake_type = 'AO'
+            context.scene.cycles.bake_type = 'AO'
             bpy.ops.object.bake(type='AO', save_mode='EXTERNAL')
             image_delete()
             save_baked_image(ao_postfix)
-            bpy.context.scene.cycles.samples = bake_prop_grp.baking_samples
+            context.scene.cycles.samples = bake_prop_grp.baking_samples
 
         # Return back metalness
         if bake_prop_grp.disable_metal:
             material_index = 0
-            for curr_material in bpy.context.object.data.materials:
+            for curr_material in context.object.data.materials:
                 link = curr_material.node_tree.links.new
 
                 # Find principled node
@@ -437,7 +437,7 @@ class MESH_OT_autobaking(bpy.types.Operator):
         if bake_prop_grp.bake_metal:
             assing_image(suffixes.index(metal_postfix))
             if bake_prop_grp.metalness_experimantal:
-                for curr_material in bpy.context.object.data.materials:
+                for curr_material in context.object.data.materials:
                     # Define link
                     link = curr_material.node_tree.links.new
                     # Find principled node
@@ -461,12 +461,12 @@ class MESH_OT_autobaking(bpy.types.Operator):
                         link(value_for_bake.outputs[0], output_node.inputs[0])
 
                 # Baking "emission"
-                bpy.context.scene.cycles.bake_type = 'EMIT'
+                context.scene.cycles.bake_type = 'EMIT'
                 bpy.ops.object.bake(type='EMIT', save_mode='EXTERNAL')
 
                 # Deleting value
                 # reconnecting metallic nodes back(enough is to connect principled to output)
-                for curr_material in bpy.context.object.data.materials:
+                for curr_material in context.object.data.materials:
                     principled_node = curr_material.node_tree.nodes.get('Principled BSDF')
 
                     # If metalness is coming from node
@@ -493,21 +493,21 @@ class MESH_OT_autobaking(bpy.types.Operator):
             save_baked_image(metal_postfix)
 
         # Return samples to "old" samples
-        bpy.context.scene.cycles.samples = old_samples
+        context.scene.cycles.samples = old_samples
 
         # Delete unused UV's
         # TOHLE ZABRALO 2 HODINYYYYYYYYYYYYYYYYYYY AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
         if bake_prop_grp.delete_old_uvs:
-            for uv_map in bpy.context.object.data.uv_layers.items():
+            for uv_map in context.object.data.uv_layers.items():
                 if uv_map[0] != bake_prop_grp.uv_map_name:
-                    bpy.context.object.data.uv_layers[uv_map[0]].active = True
+                    context.object.data.uv_layers[uv_map[0]].active = True
                     bpy.ops.mesh.uv_texture_remove()
         # Konec bloku, který zabral 2 hodiny :)
 
         # Creating material for baked textures
         if bake_prop_grp.create_new_mat:
             # Deleting materials
-            for material in bpy.context.object.data.materials.items():
+            for material in context.object.data.materials.items():
                 bpy.ops.object.material_slot_remove()
 
             # Creating material
@@ -558,7 +558,7 @@ class MESH_OT_autobaking(bpy.types.Operator):
                 link(image_node.outputs[0], principled_node.inputs[4])
 
             # Assign material to object
-            bpy.context.object.active_material = baked_material
+            context.object.active_material = baked_material
 
         # Information
         self.report({'INFO'}, "Bake was successful, images were saved")
