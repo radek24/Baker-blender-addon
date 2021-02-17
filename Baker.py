@@ -31,7 +31,7 @@ import bpy
 bl_info = {
     "name": "Baker",
     "author": "Radovan Stastny <radovan.stastny2004@gmail.com>",
-    "version": (2, 6),
+    "version": (2, 7),
     "blender": (2, 85, 0),
     "category": "Import-Export",
     "doc_url": "https://docs.google.com/document/d/17DsHfqIfumDWSyVnHD1hiJe9GBZ9yfkCH4roNI1Zo4o/edit",
@@ -86,12 +86,11 @@ class VIEW3D_PT_BAKER_bake(bpy.types.Panel):
         col.prop(bake_prop_grp, "unwrap_method")
         col = self.layout.column(align=True, )
         col.prop(bake_prop_grp, "delete_old_uvs")
-        col = self.layout.column(align=True, )
         col.prop(bake_prop_grp, "create_new_mat")
         if bake_prop_grp.bake_metal and not bake_prop_grp.metalness_experimantal:
             col.enabled = False
             bake_prop_grp.delete_old_uvs = False
-
+            bake_prop_grp.delete_old_uvs = False
         col = self.layout.column(align=True)
         col.scale_y = 1.5
         col.operator('mesh.autobake', icon='OUTLINER_OB_IMAGE')
@@ -106,7 +105,10 @@ class VIEW3D_PT_BAKER_bake_submenu_advanced(bpy.types.Panel):
 
     def draw(self, context):
         bake_prop_grp = bpy.context.window_manager.bake_prop_grp
-
+        col = self.layout.column(align=True)
+        self.layout.use_property_split = True
+        self.layout.use_property_decorate = False
+        col.prop(bake_prop_grp, "disable_metal")
         if bake_prop_grp.bake_diffuse \
                 or bake_prop_grp.bake_roughness \
                 or bake_prop_grp.bake_normal \
@@ -158,8 +160,10 @@ class BakePropertyGroup(bpy.types.PropertyGroup):
 
     metalness_experimantal: bpy.props.BoolProperty(name="Experimental metalness", default=False,
                                                    description="Will try to bake metalness map, checks docs for info")
-    create_new_mat: bpy.props.BoolProperty(name="Create new matterial", default=False,
+    create_new_mat: bpy.props.BoolProperty(name="Create new material", default=False,
                                            description="Will create new material with baked images and delete old mat.")
+    disable_metal: bpy.props.BoolProperty(name="Disable metalness", default=True,
+                                          description="will set metalness to 0 for all bakes but metallic")
 
     delete_old_uvs: bpy.props.BoolProperty(name="Delete old UV's", default=False,
                                            description="Will delete all UV's but bake one")
@@ -338,6 +342,45 @@ class MESH_OT_autobaking(bpy.types.Operator):
         # Setting samples to accelerate baking process
         old_samples = bpy.context.scene.cycles.samples
         bpy.context.scene.cycles.samples = bake_prop_grp.baking_samples
+
+        # setting metalness to 0
+        if bake_prop_grp.disable_metal:
+            # Variables
+            metalness_nodes_names = []
+            metalness_nodes_sockets = []
+            materials_with_met_nodes = []
+            # CONNECT VALUE TO IT
+
+            for curr_material in bpy.context.object.data.materials:
+                # Define link
+                link = curr_material.node_tree.links.new
+                # Find principled node
+                principled_node = curr_material.node_tree.nodes.get('Principled BSDF')
+
+                # If metalness is coming from node
+                if principled_node.inputs[4].links:
+                    # NEED TO STORE NODE AND OUTUPT--------------------------------------------------------------------
+                    for x in principled_node.inputs[4].links:
+                        metalness_nodes_sockets.append(int(x.from_socket.path_from_id()[-2:-1]))
+                        metalness_nodes_names.append(x.from_node.name)
+                    materials_with_met_nodes.append(curr_material.name)
+                    zero_value = curr_material.node_tree.nodes.new('ShaderNodeValue')
+                    zero_value.outputs[0].default_value = 0
+                    zero_value.location = (0, 0)
+                    zero_value.name = "zero_value"
+                    zero_value.label = "zero_value"
+                    link(zero_value.outputs[0], principled_node.inputs[4])
+
+                # If metalness is only one value
+                if not principled_node.inputs[4].links:
+                    # Adding values and connecting it
+                    zero_value = curr_material.node_tree.nodes.new('ShaderNodeValue')
+                    zero_value.outputs[0].default_value = 0
+                    zero_value.location = (0, 0)
+                    zero_value.name = "zero_value"
+                    zero_value.label = "zero_value"
+                    link(zero_value.outputs[0], principled_node.inputs[4])
+
         # Baking diffuse
         if bake_prop_grp.bake_diffuse:
             assing_image(suffixes.index(diffuse_postfix))
@@ -361,6 +404,34 @@ class MESH_OT_autobaking(bpy.types.Operator):
             bpy.ops.object.bake(type='NORMAL', save_mode='EXTERNAL')
             image_delete()
             save_baked_image(normal_postfix)
+
+        # Baking AO
+        if bake_prop_grp.bake_ao:
+            bpy.context.scene.cycles.samples = bake_prop_grp.bake_ao_samples
+            assing_image(suffixes.index(ao_postfix))
+            bpy.context.scene.cycles.bake_type = 'AO'
+            bpy.ops.object.bake(type='AO', save_mode='EXTERNAL')
+            image_delete()
+            save_baked_image(ao_postfix)
+            bpy.context.scene.cycles.samples = bake_prop_grp.baking_samples
+
+        # Return back metalness
+        if bake_prop_grp.disable_metal:
+            material_index = 0
+            for curr_material in bpy.context.object.data.materials:
+                link = curr_material.node_tree.links.new
+
+                # Find principled node
+                principled_node = curr_material.node_tree.nodes.get('Principled BSDF')
+                node_to_delete_value_zero = curr_material.node_tree.nodes.get("zero_value")
+                curr_material.node_tree.nodes.remove(node_to_delete_value_zero)
+                # If metalness is coming from node
+                # Check if index will be out of range(!important)
+                if len(materials_with_met_nodes) > material_index:
+                    if materials_with_met_nodes[material_index] == curr_material.name:
+                        metalness_node = curr_material.node_tree.nodes.get(str(metalness_nodes_names[material_index]))
+                        link(metalness_node.outputs[metalness_nodes_sockets[material_index]], principled_node.inputs[4])
+                        material_index = material_index + 1
 
         # Baking metalness
         if bake_prop_grp.bake_metal:
@@ -416,19 +487,8 @@ class MESH_OT_autobaking(bpy.types.Operator):
                         link(principled_node.outputs[0], output_node.inputs[0])
                         node_to_delete_value = curr_material.node_tree.nodes.get("Metallic_Value")
                         curr_material.node_tree.nodes.remove(node_to_delete_value)
-
             image_delete()
             save_baked_image(metal_postfix)
-
-        # Baking AO
-        if bake_prop_grp.bake_ao:
-            bpy.context.scene.cycles.samples = bake_prop_grp.bake_ao_samples
-            assing_image(suffixes.index(ao_postfix))
-            bpy.context.scene.cycles.bake_type = 'AO'
-            bpy.ops.object.bake(type='AO', save_mode='EXTERNAL')
-            image_delete()
-            save_baked_image(ao_postfix)
-            bpy.context.scene.cycles.samples = bake_prop_grp.baking_samples
 
         # Return samples to "old" samples
         bpy.context.scene.cycles.samples = old_samples
