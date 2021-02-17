@@ -90,7 +90,7 @@ class VIEW3D_PT_BAKER_bake(bpy.types.Panel):
         if bake_prop_grp.bake_metal and not bake_prop_grp.metalness_experimantal:
             col.enabled = False
             bake_prop_grp.delete_old_uvs = False
-            bake_prop_grp.delete_old_uvs = False
+            bake_prop_grp.create_new_mat = False
         col = self.layout.column(align=True)
         col.scale_y = 1.5
         col.operator('mesh.autobake', icon='OUTLINER_OB_IMAGE')
