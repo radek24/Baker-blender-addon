@@ -158,7 +158,7 @@ class BakePropertyGroup(bpy.types.PropertyGroup):
     bake_metal: bpy.props.BoolProperty(name="Metalness", default=False, description="Will create metalness map")
     bake_ao: bpy.props.BoolProperty(name="AO", default=False, description="Will create AmbientOcclusion map")
 
-    metalness_experimantal: bpy.props.BoolProperty(name="Experimental metalness", default=False,
+    metalness_experimantal: bpy.props.BoolProperty(name="Experimental metalness", default=True,
                                                    description="Will try to bake metalness map, checks docs for info")
     create_new_mat: bpy.props.BoolProperty(name="Create new material", default=False,
                                            description="Will create new material with baked images and delete old mat.")
