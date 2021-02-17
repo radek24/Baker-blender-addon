@@ -27,6 +27,7 @@ import bpy
 # Fix metalness baking                                                  # DONE
 # Delete old materials and create one with baked textures               # DONE
 # Are custom postfixes unnecessary?                                     # Maybe delete them
+# 32-bit normal map                                                     # !important
 
 bl_info = {
     "name": "Baker",
@@ -34,7 +35,7 @@ bl_info = {
     "version": (2, 7),
     "blender": (2, 85, 0),
     "category": "Import-Export",
-    "doc_url": "https://docs.google.com/document/d/17DsHfqIfumDWSyVnHD1hiJe9GBZ9yfkCH4roNI1Zo4o/edit",
+    "doc_url": "https://docs.google.com/document/d/1PrbxBye0iFXDtc9CN75W7rA8QD3h0k3_yFR-IAtDYMI/edit",
     "location": "View3D > Side Panel > Autobaking",
     "description": "This addon will help you with baking",
 }
@@ -42,11 +43,6 @@ bl_info = {
 
 # UI
 # -------------------------------------------------------------------------------------------------------------------- #
-
-
-def menu_func(self, context):
-    self.layout.operator(mesh.set_origin_to_selection)
-    self.layout.operator(mesh.add_tracked_lamp_plane)
 
 
 class VIEW3D_PT_BAKER_bake(bpy.types.Panel):
@@ -288,7 +284,7 @@ class MESH_OT_autobaking(bpy.types.Operator):
         name = bake_prop_grp.name_of_img
         img_type = ".png"
         path = bake_prop_grp.file_bake_output
-        # Needlessly complicated suffixes function
+        # Needlessly complicated suffixes adding function
         suffixes = []
         suffixes.clear()
         if bake_prop_grp.bake_diffuse:
@@ -302,7 +298,7 @@ class MESH_OT_autobaking(bpy.types.Operator):
         if bake_prop_grp.bake_ao:
             suffixes.append(ao_postfix)
 
-        # Create images and save them to file (weird name just so there isnt similar nodes)
+        # Create images and save them to file (weird name just so there isn't similar nodes)
         for suffix in suffixes:
             bpy.data.images.new("EiqlgubGMcfVLIiu", width=size, height=size)
             bpy.data.images["EiqlgubGMcfVLIiu"].filepath = path + name + suffix + img_type
