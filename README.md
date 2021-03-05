@@ -7,7 +7,3 @@ https://www.paypal.com/paypalme/radovanstastny
 
 # Documentation
 https://docs.google.com/document/d/1PrbxBye0iFXDtc9CN75W7rA8QD3h0k3_yFR-IAtDYMI/edit?usp=sharing
-
-You can also follow me on my other social media:
-- Instagram: https://www.instagram.com/radovan_stastny3d/
-- Artstation: https://www.artstation.com/radovanstastny
