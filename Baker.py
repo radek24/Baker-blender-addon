@@ -359,7 +359,6 @@ class MESH_OT_autobaking(bpy.types.Operator):
 
                 # If metalness is coming from node
                 if principled_node.inputs[4].links:
-                    # NEED TO STORE NODE AND OUTUPT--------------------------------------------------------------------
                     for x in principled_node.inputs[4].links:
                         metalness_nodes_sockets.append(int(x.from_socket.path_from_id()[-2:-1]))
                         metalness_nodes_names.append(x.from_node.name)
@@ -549,7 +548,7 @@ class MESH_OT_autobaking(bpy.types.Operator):
                 image_node.image.colorspace_settings.name = 'Non-Color'
                 image_node.location = (-500, -300)
                 link(image_node.outputs[0], normal_converter.inputs[1])
-                link(normal_converter.outputs[0], principled_node.inputs[19])
+                link(normal_converter.outputs[0], principled_node.inputs[20])
 
             if bake_prop_grp.bake_metal:
                 image_node = baked_material.node_tree.nodes[str(metal_postfix)]
