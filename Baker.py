@@ -32,7 +32,7 @@ import bpy
 bl_info = {
     "name": "Baker",
     "author": "Radovan Stastny <radovan.stastny2004@gmail.com>",
-    "version": (2, 7),
+    "version": (3, 0),
     "blender": (2, 85, 0),
     "category": "Import-Export",
     "doc_url": "https://docs.google.com/document/d/1PrbxBye0iFXDtc9CN75W7rA8QD3h0k3_yFR-IAtDYMI/edit",
