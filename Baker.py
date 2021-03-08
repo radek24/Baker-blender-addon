@@ -80,6 +80,9 @@ class VIEW3D_PT_BAKER_bake(bpy.types.Panel):
         col.prop(bake_prop_grp, "uv_map_name")
         col = self.layout.column(align=True)
         col.prop(bake_prop_grp, "unwrap_method")
+        if bake_prop_grp.unwrap_method == 'LIGHTMAP' or bake_prop_grp.unwrap_method == 'SMARTUV':
+            col = self.layout.column(align=True)
+            col.prop(bake_prop_grp, "island_margin", slider=True)
         col = self.layout.column(align=True, )
         col.prop(bake_prop_grp, "delete_old_uvs")
         col.prop(bake_prop_grp, "create_new_mat")
@@ -165,6 +168,8 @@ class BakePropertyGroup(bpy.types.PropertyGroup):
                                            description="Will delete all UV's but bake one")
     name_of_img: bpy.props.StringProperty(name="Prefix", default="My_baked_image",
                                           description="Name of the baked image plus automatic suffix")
+    island_margin: bpy.props.FloatProperty(name="UV margin", default=0.3, min=0, soft_max=1, max=4, precision=2,
+                                           description="margin of UV islands")
     baked_img_size: bpy.props.IntProperty(name="Image size", default=1024, soft_min=64, min=10, soft_max=3840,
                                           max=5000, subtype='PIXEL', description="Resolution of all baked images")
     file_bake_output: bpy.props.StringProperty(name="Path", default="/tmp/", subtype='DIR_PATH',
@@ -262,10 +267,10 @@ class MESH_OT_autobaking(bpy.types.Operator):
         # Unwrapping (selecting unwrap method)
 
         if bake_prop_grp.unwrap_method == 'LIGHTMAP':
-            bpy.ops.uv.lightmap_pack(PREF_MARGIN_DIV=0.5)
+            bpy.ops.uv.lightmap_pack(PREF_MARGIN_DIV=bake_prop_grp.island_margin)
 
         if bake_prop_grp.unwrap_method == 'SMARTUV':
-            bpy.ops.uv.smart_project(island_margin=0.2)
+            bpy.ops.uv.smart_project(island_margin=bake_prop_grp.island_margin)
 
         if bake_prop_grp.unwrap_method == 'PLAINUV':
             bpy.ops.uv.unwrap()
