@@ -197,7 +197,7 @@ class BakePropertyGroup(bpy.types.PropertyGroup):
             ('PLAINUV', "Unwrap", "Basic unwrap"),
             ('NONE', "None, preserve UV", "Use if you already have bake uv map"),
         ],
-        default='SMARTUV',
+        default='LIGHTMAP',
     )
 
 
