@@ -262,7 +262,7 @@ class MESH_OT_autobaking(bpy.types.Operator):
         # Unwrapping (selecting unwrap method)
 
         if bake_prop_grp.unwrap_method == 'LIGHTMAP':
-            bpy.ops.uv.lightmap_pack(PREF_MARGIN_DIV=0.2)
+            bpy.ops.uv.lightmap_pack(PREF_MARGIN_DIV=0.5)
 
         if bake_prop_grp.unwrap_method == 'SMARTUV':
             bpy.ops.uv.smart_project(island_margin=0.2)
