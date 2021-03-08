@@ -168,7 +168,7 @@ class BakePropertyGroup(bpy.types.PropertyGroup):
                                            description="Will delete all UV's but bake one")
     name_of_img: bpy.props.StringProperty(name="Prefix", default="My_baked_image",
                                           description="Name of the baked image plus automatic suffix")
-    island_margin: bpy.props.FloatProperty(name="UV margin", default=0.3, min=0, soft_max=1, max=4, precision=2,
+    island_margin: bpy.props.FloatProperty(name="UV margin", default=0.2, min=0, soft_max=1, max=4, precision=2,
                                            description="margin of UV islands")
     baked_img_size: bpy.props.IntProperty(name="Image size", default=1024, soft_min=64, min=10, soft_max=3840,
                                           max=5000, subtype='PIXEL', description="Resolution of all baked images")
