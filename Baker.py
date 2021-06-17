@@ -54,6 +54,7 @@ class VIEW3D_PT_BAKER_bake(bpy.types.Panel):
     def draw(self, context):
         col = self.layout.column(align=True)
         bake_prop_grp = context.window_manager.bake_prop_grp
+        col.prop(context.scene.render.bake, "use_selected_to_active", text="Selected to active")
         col.label(text="Bake type")
         col.prop(bake_prop_grp, "bake_diffuse")
         col.prop(bake_prop_grp, "bake_roughness")
@@ -94,6 +95,33 @@ class VIEW3D_PT_BAKER_bake(bpy.types.Panel):
         col.scale_y = 1.5
         col.operator('mesh.autobake', icon='OUTLINER_OB_IMAGE')
 
+class VIEW3D_PT_BAKER_bake_selected_to_active(bpy.types.Panel):
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_category = "Autobaking"
+    bl_label = "From selected to active"
+    bl_parent_id = "VIEW3D_PT_BAKER_bake"
+
+    def draw(self, context):
+        layout = self.layout
+        layout.use_property_split = True
+        layout.use_property_decorate = False
+        cbk = context.scene.render.bake
+        col = self.layout.column(align=True)
+        bake_prop_grp = context.window_manager.bake_prop_grp
+        col.prop(cbk, "use_cage", text="Cage")
+        if cbk.use_cage:
+            col.prop(cbk, "cage_object")
+            col = layout.column()
+            col.prop(cbk, "cage_extrusion")
+            col.active = cbk.cage_object is None
+        else:
+            col.prop(cbk, "cage_extrusion", text="Extrusion")
+
+        col = layout.column()
+        col.prop(cbk, "max_ray_distance")
+
+
 
 class VIEW3D_PT_BAKER_bake_submenu_advanced(bpy.types.Panel):
     bl_space_type = 'VIEW_3D'
@@ -108,6 +136,9 @@ class VIEW3D_PT_BAKER_bake_submenu_advanced(bpy.types.Panel):
         self.layout.use_property_split = True
         self.layout.use_property_decorate = False
         col.prop(bake_prop_grp, "disable_metal")
+        self.layout.use_property_split = True
+        self.layout.use_property_decorate = False
+        col.prop(bake_prop_grp, "metalness_experimantal")
         if bake_prop_grp.bake_diffuse \
                 or bake_prop_grp.bake_roughness \
                 or bake_prop_grp.bake_normal \
@@ -136,7 +167,7 @@ class VIEW3D_PT_BAKER_bake_submenu_advanced(bpy.types.Panel):
             self.layout.use_property_split = True
             self.layout.use_property_decorate = False
             col.prop(bake_prop_grp, "bake_postfix_metalness")
-            col.prop(bake_prop_grp, "metalness_experimantal")
+
         if bake_prop_grp.bake_ao:
             col = self.layout.column(align=True)
             self.layout.use_property_split = True
@@ -178,7 +209,10 @@ class BakePropertyGroup(bpy.types.PropertyGroup):
                                           max=2048, description="Baking samples, best to leave at 1")
     bake_ao_samples: bpy.props.IntProperty(name="AO samples", default=128, min=1, soft_max=1024,
                                            max=2048, description="Baking samples for AO")
+    from_selected_to_active: bpy.props.BoolProperty(name="Selected to active", default=False, description="Will bake from selected to active")
 
+    bit32normal: bpy.props.BoolProperty(name="32-bit normal", default=False, description="Will create 32-bit image for "
+                                                                                         "normal map")
     # Custom postfixes
     bake_postfix_diffuse: bpy.props.StringProperty(name="Diffuse", default="_diffuse")
     bake_postfix_roughness: bpy.props.StringProperty(name="Roughness", default="_roughness")
@@ -307,8 +341,9 @@ class MESH_OT_autobaking(bpy.types.Operator):
         if bake_prop_grp.bake_ao:
             suffixes.append(ao_postfix)
 
-        # Create images and save them to file (weird name just so there isn't similar nodes)
+        # Create images and save them to file (weird name just so there isn't similar images)
         for suffix in suffixes:
+
             bpy.data.images.new("EiqlgubGMcfVLIiu", width=size, height=size)
             bpy.data.images["EiqlgubGMcfVLIiu"].filepath = path + name + suffix + img_type
             bpy.data.images["EiqlgubGMcfVLIiu"].file_format = 'PNG'
@@ -579,6 +614,7 @@ def register():
     # UI
     bpy.utils.register_class(VIEW3D_PT_BAKER_bake)
     bpy.utils.register_class(VIEW3D_PT_BAKER_bake_submenu_advanced)
+    bpy.utils.register_class(VIEW3D_PT_BAKER_bake_selected_to_active)
     # operators
 
     bpy.utils.register_class(MESH_OT_autobaking)
@@ -595,6 +631,7 @@ def unregister():
     # UI
     bpy.utils.unregister_class(VIEW3D_PT_BAKER_bake)
     bpy.utils.unregister_class(VIEW3D_PT_BAKER_bake_submenu_advanced)
+    bpy.utils.unregister_class(VIEW3D_PT_BAKER_bake_selected_to_active)
 
     # Operators
     bpy.utils.unregister_class(MESH_OT_autobaking)
