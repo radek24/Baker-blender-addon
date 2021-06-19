@@ -57,9 +57,10 @@ class VIEW3D_PT_BAKER_bake(bpy.types.Panel):
         
         col = self.layout.column(align=True)
         bake_prop_grp = context.window_manager.bake_prop_grp
-        objs = context.selected_objects
-        if len(objs) != 0:
-            bake_prop_grp.name_of_img = objs[0].name
+        if bake_prop_grp.use_active_object_as_prefix == True:
+            objs = context.selected_objects
+            if len(objs) != 0:
+                bake_prop_grp.name_of_img = objs[0].name
         col.prop(context.scene.render.bake, "use_selected_to_active", text="Selected to active")
         col.label(text="Bake type")
         col.prop(bake_prop_grp, "bake_diffuse")
@@ -141,10 +142,14 @@ class VIEW3D_PT_BAKER_bake_submenu_advanced(bpy.types.Panel):
         col = self.layout.column(align=True)
         self.layout.use_property_split = True
         self.layout.use_property_decorate = False
+        col.prop(bake_prop_grp, "use_active_object_as_prefix")
+        self.layout.use_property_split = True
+        self.layout.use_property_decorate = False
         col.prop(bake_prop_grp, "disable_metal")
         self.layout.use_property_split = True
         self.layout.use_property_decorate = False
         col.prop(bake_prop_grp, "metalness_experimantal")
+        
         if bake_prop_grp.bake_diffuse \
                 or bake_prop_grp.bake_roughness \
                 or bake_prop_grp.bake_normal \
@@ -193,6 +198,7 @@ class BakePropertyGroup(bpy.types.PropertyGroup):
     bake_normal: bpy.props.BoolProperty(name="Normal", default=False, description="Will bake normal map")
     bake_metal: bpy.props.BoolProperty(name="Metalness", default=False, description="Will create metalness map")
     bake_ao: bpy.props.BoolProperty(name="AO", default=False, description="Will create AmbientOcclusion map")
+    use_active_object_as_prefix: bpy.props.BoolProperty(name="Use ac. obj as prefix", default=True, description="Use active object's name as prefix")
 
     metalness_experimantal: bpy.props.BoolProperty(name="Experimental metalness", default=True,
                                                    description="Will try to bake metalness map, checks docs for info")
