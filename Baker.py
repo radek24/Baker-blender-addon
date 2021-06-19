@@ -52,8 +52,14 @@ class VIEW3D_PT_BAKER_bake(bpy.types.Panel):
     bl_label = "Auto bake"
 
     def draw(self, context):
+      
+
+        
         col = self.layout.column(align=True)
         bake_prop_grp = context.window_manager.bake_prop_grp
+        objs = context.selected_objects
+        if len(objs) != 0:
+            bake_prop_grp.name_of_img = objs[0].name
         col.prop(context.scene.render.bake, "use_selected_to_active", text="Selected to active")
         col.label(text="Bake type")
         col.prop(bake_prop_grp, "bake_diffuse")
@@ -183,27 +189,27 @@ class VIEW3D_PT_BAKER_bake_submenu_advanced(bpy.types.Panel):
 
 class BakePropertyGroup(bpy.types.PropertyGroup):
     bake_diffuse: bpy.props.BoolProperty(name="Diffuse", default=True, description="Will bake diffuse/color map")
-    bake_roughness: bpy.props.BoolProperty(name="Roughness", default=False, description="Will bake roughness map")
+    bake_roughness: bpy.props.BoolProperty(name="Roughness", default=True, description="Will bake roughness map")
     bake_normal: bpy.props.BoolProperty(name="Normal", default=False, description="Will bake normal map")
     bake_metal: bpy.props.BoolProperty(name="Metalness", default=False, description="Will create metalness map")
     bake_ao: bpy.props.BoolProperty(name="AO", default=False, description="Will create AmbientOcclusion map")
 
     metalness_experimantal: bpy.props.BoolProperty(name="Experimental metalness", default=True,
                                                    description="Will try to bake metalness map, checks docs for info")
-    create_new_mat: bpy.props.BoolProperty(name="Create new material", default=False,
+    create_new_mat: bpy.props.BoolProperty(name="Create new material", default=True,
                                            description="Will create new material with baked images and delete old mat.")
     disable_metal: bpy.props.BoolProperty(name="Disable metalness", default=True,
                                           description="will set metalness to 0 for all bakes but metallic")
 
-    delete_old_uvs: bpy.props.BoolProperty(name="Delete old UV's", default=False,
+    delete_old_uvs: bpy.props.BoolProperty(name="Delete old UV's", default=True,
                                            description="Will delete all UV's but bake one")
     name_of_img: bpy.props.StringProperty(name="Prefix", default="My_baked_image",
                                           description="Name of the baked image plus automatic suffix")
     island_margin: bpy.props.FloatProperty(name="UV margin", default=0.2, min=0, soft_max=1, max=4, precision=2,
                                            description="margin of UV islands")
-    baked_img_size: bpy.props.IntProperty(name="Image size", default=1024, soft_min=64, min=10, soft_max=3840,
+    baked_img_size: bpy.props.IntProperty(name="Image size", default=256, soft_min=64, min=10, soft_max=3840,
                                           max=5000, subtype='PIXEL', description="Resolution of all baked images")
-    file_bake_output: bpy.props.StringProperty(name="Path", default="/tmp/", subtype='DIR_PATH',
+    file_bake_output: bpy.props.StringProperty(name="Path", default="C:/Users/home/OneDrive/Dokumenty/GitHub/Codename_RED/Content/textures", subtype='DIR_PATH',
                                                description="Your images will be saved there")
     baking_samples: bpy.props.IntProperty(name="Bake samples", default=1, min=1, soft_max=512,
                                           max=2048, description="Baking samples, best to leave at 1")
@@ -231,7 +237,7 @@ class BakePropertyGroup(bpy.types.PropertyGroup):
             ('PLAINUV', "Unwrap", "Basic unwrap"),
             ('NONE', "None, preserve UV", "Use if you already have bake uv map"),
         ],
-        default='LIGHTMAP',
+        default='NONE',
     )
 
 
@@ -257,7 +263,7 @@ class MESH_OT_autobaking(bpy.types.Operator):
             return False
 
     def execute(self, context):
-
+        
         # Define properties
         bake_prop_grp = context.window_manager.bake_prop_grp
 
