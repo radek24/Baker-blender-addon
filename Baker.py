@@ -17,7 +17,7 @@
 # ##### END GPL LICENSE BLOCK #####
 
 
-import bpy
+import bpyahoj
 
 # TODO:
 # Progress bar                                                          # probably impossible
