@@ -386,8 +386,8 @@ class MESH_OT_autobaking(bpy.types.Operator):
                 image_texture_node.location = (-150, -200)
                 image_texture_node.select = True
                 mat[1].node_tree.nodes.active = image_texture_node
-                if x_type != diffuse_postfix:
-                    image_texture_node.image.colorspace_settings.name = 'Non-Color'
+                if x_type != suffixes.index(diffuse_postfix):
+                   image_texture_node.image.colorspace_settings.name = 'Non-Color'
 
         # Delete images from materials
         def image_delete():
