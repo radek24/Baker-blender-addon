@@ -215,7 +215,7 @@ class BakePropertyGroup(bpy.types.PropertyGroup):
                                            description="margin of UV islands")
     baked_img_size: bpy.props.IntProperty(name="Image size", default=256, soft_min=64, min=10, soft_max=3840,
                                           max=5000, subtype='PIXEL', description="Resolution of all baked images")
-    file_bake_output: bpy.props.StringProperty(name="Path", default="C:/Users/home/OneDrive/Dokumenty/GitHub/Codename_RED/Content/textures/", subtype='DIR_PATH',
+    file_bake_output: bpy.props.StringProperty(name="Path", default="C:/Users/home/OneDrive/Dokumenty/Unreal Projects/Codename_2063/Content/textures/", subtype='DIR_PATH',
                                                description="Your images will be saved there")
     baking_samples: bpy.props.IntProperty(name="Bake samples", default=1, min=1, soft_max=512,
                                           max=2048, description="Baking samples, best to leave at 1")
@@ -567,7 +567,8 @@ class MESH_OT_autobaking(bpy.types.Operator):
                 bpy.ops.object.material_slot_remove()
 
             # Creating material
-            baked_material = bpy.data.materials.new(name="Baked_mat")
+            Material_name = str(name + "_mat")
+            baked_material = bpy.data.materials.new(name=Material_name)
             baked_material.use_nodes = True
 
             # Define link
