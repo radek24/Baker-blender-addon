@@ -553,7 +553,8 @@ class MESH_OT_autobaking(bpy.types.Operator):
                 bpy.ops.object.material_slot_remove()
 
             # Creating material
-            baked_material = bpy.data.materials.new(name="Baked_mat")
+            Material_name = str(name + "_mat")
+            baked_material = bpy.data.materials.new(name=Material_name)
             baked_material.use_nodes = True
 
             # Define link
