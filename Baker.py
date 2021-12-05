@@ -400,9 +400,9 @@ class MESH_OT_autobaking(bpy.types.Operator):
                 principled_node = curr_material.node_tree.nodes.get('Principled BSDF')
 
                 # If metalness is coming from node
-                if principled_node.inputs[4].links:
+                if principled_node.inputs['Metallic'].links:
                     # NEED TO STORE NODE AND OUTUPT--------------------------------------------------------------------
-                    for x in principled_node.inputs[4].links:
+                    for x in principled_node.inputs['Metallic'].links:
                         metalness_nodes_sockets.append(int(x.from_socket.path_from_id()[-2:-1]))
                         metalness_nodes_names.append(x.from_node.name)
                     materials_with_met_nodes.append(curr_material.name)
@@ -411,17 +411,17 @@ class MESH_OT_autobaking(bpy.types.Operator):
                     zero_value.location = (0, 0)
                     zero_value.name = "zero_value"
                     zero_value.label = "zero_value"
-                    link(zero_value.outputs[0], principled_node.inputs[4])
+                    link(zero_value.outputs[0], principled_node.inputs['Metallic'])
 
                 # If metalness is only one value
-                if not principled_node.inputs[4].links:
+                if not principled_node.inputs['Metallic'].links:
                     # Adding values and connecting it
                     zero_value = curr_material.node_tree.nodes.new('ShaderNodeValue')
                     zero_value.outputs[0].default_value = 0
                     zero_value.location = (0, 0)
                     zero_value.name = "zero_value"
                     zero_value.label = "zero_value"
-                    link(zero_value.outputs[0], principled_node.inputs[4])
+                    link(zero_value.outputs[0], principled_node.inputs['Metallic'])
 
         # Baking diffuse
         if bake_prop_grp.bake_diffuse:
@@ -472,7 +472,7 @@ class MESH_OT_autobaking(bpy.types.Operator):
                 if len(materials_with_met_nodes) > material_index:
                     if materials_with_met_nodes[material_index] == curr_material.name:
                         metalness_node = curr_material.node_tree.nodes.get(str(metalness_nodes_names[material_index]))
-                        link(metalness_node.outputs[metalness_nodes_sockets[material_index]], principled_node.inputs[4])
+                        link(metalness_node.outputs[metalness_nodes_sockets[material_index]], principled_node.inputs['Metallic'])
                         material_index = material_index + 1
 
         # Baking metalness
@@ -485,18 +485,18 @@ class MESH_OT_autobaking(bpy.types.Operator):
                     # Find principled node
                     principled_node = curr_material.node_tree.nodes.get('Principled BSDF')
                     # If metalness is coming from node
-                    if principled_node.inputs[4].links:
-                        for x in principled_node.inputs[4].links:
+                    if principled_node.inputs['Metallic'].links:
+                        for x in principled_node.inputs['Metallic'].links:
                             output_index = int(x.from_socket.path_from_id()[-2:-1])
                             output_node = curr_material.node_tree.nodes.get("Material Output")
                             metalness_node = curr_material.node_tree.nodes.get(str(x.from_node.name))
                             link(metalness_node.outputs[output_index], output_node.inputs[0])
 
                     # If metalness is only one value
-                    if not principled_node.inputs[4].links:
+                    if not principled_node.inputs['Metallic'].links:
                         # Adding values and connecting it
                         value_for_bake = curr_material.node_tree.nodes.new('ShaderNodeValue')
-                        value_for_bake.outputs[0].default_value = principled_node.inputs[4].default_value
+                        value_for_bake.outputs[0].default_value = principled_node.inputs['Metallic'].default_value
                         value_for_bake.location = (0, 0)
                         value_for_bake.name = "Metallic_Value"
                         output_node = curr_material.node_tree.nodes.get("Material Output")
@@ -512,7 +512,7 @@ class MESH_OT_autobaking(bpy.types.Operator):
                     principled_node = curr_material.node_tree.nodes.get('Principled BSDF')
 
                     # If metalness is coming from node
-                    if principled_node.inputs[4].links:
+                    if principled_node.inputs['Metallic'].links:
                         # Define link
                         link = curr_material.node_tree.links.new
                         # Get nodes
@@ -520,7 +520,7 @@ class MESH_OT_autobaking(bpy.types.Operator):
                         output_node = curr_material.node_tree.nodes.get("Material Output")
                         link(principled_node.outputs[0], output_node.inputs[0])
                     # If metalness is only one value
-                    if not principled_node.inputs[4].links:
+                    if not principled_node.inputs['Metallic'].links:
                         # Define link
                         link = curr_material.node_tree.links.new
                         # Get nodes
@@ -582,7 +582,7 @@ class MESH_OT_autobaking(bpy.types.Operator):
                 # Setting color space
                 image_node.image.colorspace_settings.name = 'Non-Color'
                 # connecting
-                link(image_node.outputs[0], principled_node.inputs[7])
+                link(image_node.outputs[0], principled_node.inputs['Roughness'])
 
             if bake_prop_grp.bake_normal:
                 # Creating normal map node
@@ -598,7 +598,7 @@ class MESH_OT_autobaking(bpy.types.Operator):
                 image_node = baked_material.node_tree.nodes[str(metal_postfix)]
                 image_node.location = (-500, 300)
                 image_node.image.colorspace_settings.name = 'Non-Color'
-                link(image_node.outputs[0], principled_node.inputs[4])
+                link(image_node.outputs[0], principled_node.inputs['Metallic'])
 
             # Assign material to object
             context.object.active_material = baked_material
