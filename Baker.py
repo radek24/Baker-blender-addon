@@ -619,7 +619,6 @@ class MESH_OT_autobaking(bpy.types.Operator):
             context.object.active_material = baked_material
 
         # Information
-        print ()
         self.report({'INFO'}, "Bake was successful, images were saved")
 
         return {'FINISHED'}
