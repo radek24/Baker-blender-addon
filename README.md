@@ -1,5 +1,6 @@
 # Baker-blender-addon
 Addon to automate blender baking process
+*Sometimes doesn't work in 3.0 idk why, just switch to 2.x*
 
 If you find this addon useful you can donate to my [paypal](https://www.paypal.com/paypalme/radovanstastny). (Addon is completly free, this is just if you want to support development)
 
