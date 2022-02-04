@@ -704,6 +704,7 @@ class MESH_OT_autobaking(bpy.types.Operator):
                 image_texture_node.label = "bake image242425"  
                 image_texture_node.image = bpy.data.images.load(path + name + "_Packed" + img_type,
                                                                 check_existing=True)
+                image_texture_node.image.colorspace_settings.name = 'Non-Color'
                 image_texture_node.location = (-150, -200)
                 image_texture_node.select = True
                 mat[1].node_tree.nodes.active = image_texture_node
