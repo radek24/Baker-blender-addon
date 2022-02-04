@@ -19,7 +19,7 @@
 
 import bpy
 
-# TODO:
+# TODO:  
 # Progress bar                                                          # probably impossible
 # Baking multiple objects at a time                                     #
 # More baking options (combined)                                        #
@@ -40,6 +40,7 @@ bl_info = {
     "description": "This addon will help you with baking",
 }
 
+
 # UI
 # -------------------------------------------------------------------------------------------------------------------- #
 
@@ -51,8 +52,15 @@ class VIEW3D_PT_BAKER_bake(bpy.types.Panel):
     bl_label = "Auto bake"
 
     def draw(self, context):
+      
+
+        
         col = self.layout.column(align=True)
         bake_prop_grp = context.window_manager.bake_prop_grp
+        if bake_prop_grp.use_active_object_as_prefix == True:
+            objs = context.selected_objects
+            if len(objs) != 0:
+                bake_prop_grp.name_of_img = objs[0].name
         col.prop(context.scene.render.bake, "use_selected_to_active", text="Selected to active")
         col.label(text="Bake type")
         col.prop(bake_prop_grp, "bake_diffuse")
@@ -64,8 +72,7 @@ class VIEW3D_PT_BAKER_bake(bpy.types.Panel):
             col.label(text="Metalness will only create image", icon='ERROR')
         col.prop(bake_prop_grp, "bake_ao")
 
-        col = self.layout.column(align=True)
-        col.label(text="Same images will be overwritten", icon='INFO')
+
         col = self.layout.column(align=True)
         col.prop(bake_prop_grp, "name_of_img")
         col = self.layout.column(align=True)
@@ -120,7 +127,27 @@ class VIEW3D_PT_BAKER_bake_selected_to_active(bpy.types.Panel):
         col = layout.column()
         col.prop(cbk, "max_ray_distance")
 
+# --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+class VIEW3D_PT_BAKER_texture_packing(bpy.types.Panel):
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_category = "Autobaking"
+    bl_label = "Texture packing"
+    bl_parent_id = "VIEW3D_PT_BAKER_bake"
 
+    def draw(self, context):
+        bake_prop_grp = context.window_manager.bake_prop_grp
+        col = self.layout.column(align=True)
+        self.layout.use_property_split = True
+        self.layout.use_property_decorate = False
+        col.prop(bake_prop_grp, "texture_pack")
+        self.layout.use_property_split = True
+        self.layout.use_property_decorate = False
+        col.prop(bake_prop_grp,"baked_maps_R")
+        col.prop(bake_prop_grp,"baked_maps_G")
+        col.prop(bake_prop_grp,"baked_maps_B")
 
 class VIEW3D_PT_BAKER_bake_submenu_advanced(bpy.types.Panel):
     bl_space_type = 'VIEW_3D'
@@ -134,10 +161,14 @@ class VIEW3D_PT_BAKER_bake_submenu_advanced(bpy.types.Panel):
         col = self.layout.column(align=True)
         self.layout.use_property_split = True
         self.layout.use_property_decorate = False
+        col.prop(bake_prop_grp, "use_active_object_as_prefix")
+        self.layout.use_property_split = True
+        self.layout.use_property_decorate = False
         col.prop(bake_prop_grp, "disable_metal")
         self.layout.use_property_split = True
         self.layout.use_property_decorate = False
         col.prop(bake_prop_grp, "metalness_experimantal")
+        
         if bake_prop_grp.bake_diffuse \
                 or bake_prop_grp.bake_roughness \
                 or bake_prop_grp.bake_normal \
@@ -182,26 +213,27 @@ class VIEW3D_PT_BAKER_bake_submenu_advanced(bpy.types.Panel):
 
 class BakePropertyGroup(bpy.types.PropertyGroup):
     bake_diffuse: bpy.props.BoolProperty(name="Diffuse", default=True, description="Will bake diffuse/color map")
-    bake_roughness: bpy.props.BoolProperty(name="Roughness", default=False, description="Will bake roughness map")
+    bake_roughness: bpy.props.BoolProperty(name="Roughness", default=True, description="Will bake roughness map")
     bake_normal: bpy.props.BoolProperty(name="Normal", default=False, description="Will bake normal map")
     bake_metal: bpy.props.BoolProperty(name="Metalness", default=False, description="Will create metalness map")
     bake_ao: bpy.props.BoolProperty(name="AO", default=False, description="Will create AmbientOcclusion map")
+    use_active_object_as_prefix: bpy.props.BoolProperty(name="Use ac. obj as prefix", default=True, description="Use active object's name as prefix")
 
     metalness_experimantal: bpy.props.BoolProperty(name="Experimental metalness", default=True,
                                                    description="Will try to bake metalness map, checks docs for info")
-    create_new_mat: bpy.props.BoolProperty(name="Create new material", default=False,
+    create_new_mat: bpy.props.BoolProperty(name="Create new material", default=True,
                                            description="Will create new material with baked images and delete old mat.")
     disable_metal: bpy.props.BoolProperty(name="Disable metalness", default=True,
                                           description="will set metalness to 0 for all bakes but metallic")
 
-    delete_old_uvs: bpy.props.BoolProperty(name="Delete old UV's", default=False,
+    delete_old_uvs: bpy.props.BoolProperty(name="Delete old UV's", default=True,
                                            description="Will delete all UV's but bake one")
     name_of_img: bpy.props.StringProperty(name="Prefix", default="My_baked_image",
                                           description="Name of the baked image plus automatic suffix")
     island_margin: bpy.props.FloatProperty(name="UV margin", default=0.2, min=0, soft_max=1, max=4, precision=2,
                                            description="margin of UV islands")
-    baked_img_size: bpy.props.IntProperty(name="Image size", default=1024, soft_min=64, min=10, soft_max=3840,
-                                          max=5000, subtype='PIXEL', description="Resolution of all baked images")
+    baked_img_size: bpy.props.IntProperty(name="Image size", default=256, soft_min=64, min=8, soft_max=4096,
+                                          max=8192, subtype='PIXEL', description="Resolution of all baked images")
     file_bake_output: bpy.props.StringProperty(name="Path", default="/tmp/", subtype='DIR_PATH',
                                                description="Your images will be saved there")
     baking_samples: bpy.props.IntProperty(name="Bake samples", default=1, min=1, soft_max=512,
@@ -209,7 +241,7 @@ class BakePropertyGroup(bpy.types.PropertyGroup):
     bake_ao_samples: bpy.props.IntProperty(name="AO samples", default=128, min=1, soft_max=1024,
                                            max=2048, description="Baking samples for AO")
     from_selected_to_active: bpy.props.BoolProperty(name="Selected to active", default=False, description="Will bake from selected to active")
-
+    texture_pack: bpy.props.BoolProperty(name="Pack texture to RGB", default=False, description="Pack grayscale textures into RGB channels")
     bit32normal: bpy.props.BoolProperty(name="32-bit normal", default=False, description="Will create 32-bit image for "
                                                                                          "normal map")
     # Custom postfixes
@@ -218,6 +250,10 @@ class BakePropertyGroup(bpy.types.PropertyGroup):
     bake_postfix_normal: bpy.props.StringProperty(name="Normal", default="_normal")
     bake_postfix_metalness: bpy.props.StringProperty(name="Metalness", default="_metalness")
     bake_postfix_ao: bpy.props.StringProperty(name="AO", default="_AO")
+    
+
+    
+     
     uv_map_name: bpy.props.StringProperty(
         description="if you already have baking uv map, write its name here."
                     " Otherwise UV map with this name will be created",
@@ -230,7 +266,38 @@ class BakePropertyGroup(bpy.types.PropertyGroup):
             ('PLAINUV', "Unwrap", "Basic unwrap"),
             ('NONE', "None, preserve UV", "Use if you already have bake uv map"),
         ],
-        default='LIGHTMAP',
+        default='SMARTUV',
+    )
+    
+    baked_maps_R: bpy.props.EnumProperty(
+        name="Red",
+        items=[
+            ("0", "Roughness", "--"),
+            ("1", "Metalness", "--"),
+            ("2", "AO", "--"),
+            ("3", "none", "--"),
+        ],
+        default="0",
+    )
+    baked_maps_G: bpy.props.EnumProperty(
+        name="Green",
+        items=[
+            ("0", "Roughness", "--"),
+            ("1", "Metalness", "--"),
+            ("2", "AO", "--"),
+            ("3", "none", "--"),
+        ],
+        default="1",
+    )
+    baked_maps_B: bpy.props.EnumProperty(
+        name="Blue",
+        items=[
+            ("0", "Roughness", "--"),
+            ("1", "Metalness", "--"),
+            ("2", "AO", "--"),
+            ("3", "none", "--"),
+        ],
+        default="2",
     )
 
 
@@ -256,7 +323,7 @@ class MESH_OT_autobaking(bpy.types.Operator):
             return False
 
     def execute(self, context):
-
+        
         # Define properties
         bake_prop_grp = context.window_manager.bake_prop_grp
 
@@ -281,6 +348,12 @@ class MESH_OT_autobaking(bpy.types.Operator):
             self.report({'ERROR'}, "You need to have at least one material on your object ")
             return {'CANCELLED'}
 
+        #turn off something
+        if  bpy.app.version >= (3, 00, 0):
+            bpy.context.scene.cycles.use_adaptive_sampling = False
+        
+        # Store active Obj 
+        AcObj = bpy.context.active_object      
         # UV map creation
         is_there_uv = False
         # Checking if there is UV map
@@ -326,6 +399,24 @@ class MESH_OT_autobaking(bpy.types.Operator):
         name = bake_prop_grp.name_of_img
         img_type = ".png"
         path = bake_prop_grp.file_bake_output
+        
+        # jak tohle funguje
+        images_packer = []
+        images_packer.clear()
+        if bake_prop_grp.bake_roughness:
+            images_packer.append(roughness_postfix)
+        else:
+            images_packer.append("3")
+        if bake_prop_grp.bake_metal:
+            images_packer.append(metal_postfix)
+        else:
+            images_packer.append("3")
+        if bake_prop_grp.bake_ao:
+            images_packer.append(ao_postfix)
+        else:
+            images_packer.append("3")
+        images_packer.append("3")
+        
         # Needlessly complicated suffixes adding function
         suffixes = []
         suffixes.clear()
@@ -366,14 +457,15 @@ class MESH_OT_autobaking(bpy.types.Operator):
                 image_texture_node.label = "bake image242425"
                 # check_existing=True will check if there is already image, set to False if you want bake every
                 # material separately (maybe feature? was bug.)
+                
                 image_texture_node.image = bpy.data.images.load(path + name + suffixes[x_type] + img_type,
                                                                 check_existing=True)
+                
                 image_texture_node.location = (-150, -200)
                 image_texture_node.select = True
                 mat[1].node_tree.nodes.active = image_texture_node
-
                 if x_type != suffixes.index(diffuse_postfix):
-                    image_texture_node.image.colorspace_settings.name = 'Non-Color'
+                   image_texture_node.image.colorspace_settings.name = 'Non-Color'
 
         # Delete images from materials
         def image_delete():
@@ -537,6 +629,7 @@ class MESH_OT_autobaking(bpy.types.Operator):
         # Return samples to "old" samples
         context.scene.cycles.samples = old_samples
 
+        
         # Delete unused UV's
         # TOHLE ZABRALO 2 HODINYYYYYYYYYYYYYYYYYYY AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
         if bake_prop_grp.delete_old_uvs:
@@ -545,6 +638,91 @@ class MESH_OT_autobaking(bpy.types.Operator):
                     context.object.data.uv_layers[uv_map[0]].active = True
                     bpy.ops.mesh.uv_texture_remove()
         # Konec bloku, který zabral 2 hodiny :)
+        # Store the baked obj
+        BakedObj = context.object
+        
+        if bake_prop_grp.texture_pack:
+            # Tady vložit blok který packne masky do chanelu
+            namehash = "549sdf5adsf46f4swef74sy123d"
+
+            material_Pack = bpy.data.materials.new(name="PackedBakerMatlol")
+            material_Pack.use_nodes = True
+
+            # Define link
+            link = material_Pack.node_tree.links.new
+            # Material modification
+            principled_node = material_Pack.node_tree.nodes['Principled BSDF']
+            material_Pack.node_tree.nodes.remove(principled_node)
+            combine_node = material_Pack.node_tree.nodes.new('ShaderNodeCombineRGB')
+            combine_node.location = (-150, 0)
+            output_node = material_Pack.node_tree.nodes["Material Output"]
+            output_node.location = (0, 0)
+            link(combine_node.outputs[0], output_node.inputs[0])
+            for index in suffixes:
+                if str(index) != str(diffuse_postfix):
+                    if str(index) != str(normal_postfix):
+
+                        texture_node = material_Pack.node_tree.nodes.new('ShaderNodeTexImage')
+                        texture_node.label = str(index)
+                        texture_node.name = str(index)
+                        texture_node.image = bpy.data.images.load(path + name + index + img_type,
+                                                                  check_existing=True)
+                        texture_node.image.colorspace_settings.name = 'Non-Color'
+                        texture_node.interpolation = 'Closest'
+
+            if bake_prop_grp.baked_maps_R != "3" and images_packer[int(bake_prop_grp.baked_maps_R)] != "3" :
+                image_node = material_Pack.node_tree.nodes[str(images_packer[int(bake_prop_grp.baked_maps_R)])]
+                link(image_node.outputs[0], combine_node.inputs[0])
+
+            if bake_prop_grp.baked_maps_G != "3" and images_packer[int(bake_prop_grp.baked_maps_G)] != "3" :
+                image_node = material_Pack.node_tree.nodes[str(images_packer[int(bake_prop_grp.baked_maps_G)])]
+                link(image_node.outputs[0], combine_node.inputs[1])
+
+            if bake_prop_grp.baked_maps_B != "3"and images_packer[int(bake_prop_grp.baked_maps_B)] !="3" :
+                image_node = material_Pack.node_tree.nodes[str(images_packer[int(bake_prop_grp.baked_maps_B)])]
+                link(image_node.outputs[0], combine_node.inputs[2])
+
+
+
+            bpy.ops.mesh.primitive_plane_add()
+            bpy.context.active_object.name = namehash
+            bpy.context.object.active_material = material_Pack
+
+            # Bake image here
+            # Create image here
+            bpy.data.images.new("EiqlgubGMcfVLIiua", width=size, height=size)
+            bpy.data.images["EiqlgubGMcfVLIiua"].filepath = path + name + "_Packed" + img_type
+            bpy.data.images["EiqlgubGMcfVLIiua"].file_format = 'PNG'
+            bpy.data.images["EiqlgubGMcfVLIiua"].save()
+            img = bpy.data.images["EiqlgubGMcfVLIiua"]
+            bpy.data.images.remove(img)
+
+            # Baking
+            for mat in bpy.context.active_object.data.materials.items():
+                image_texture_node = mat[1].node_tree.nodes.new('ShaderNodeTexImage')
+                image_texture_node.name = "bake image242425"
+                image_texture_node.label = "bake image242425"  
+                image_texture_node.image = bpy.data.images.load(path + name + "_Packed" + img_type,
+                                                                check_existing=True)
+                image_texture_node.location = (-150, -200)
+                image_texture_node.select = True
+                mat[1].node_tree.nodes.active = image_texture_node
+
+
+
+            context.scene.cycles.bake_type = 'EMIT'
+            bpy.ops.object.bake(type='EMIT', save_mode='EXTERNAL')
+            image_delete()
+            save_name = str(name + "_Packed" + img_type)
+            img_bake = bpy.data.images[save_name]
+            img_bake.save()
+
+
+            bpy.ops.object.delete()
+
+        bpy.ops.object.select_all(action='DESELECT')
+        AcObj.select_set(True)
+        bpy.context.view_layer.objects.active = AcObj
 
         # Creating material for baked textures
         if bake_prop_grp.create_new_mat:
@@ -601,8 +779,8 @@ class MESH_OT_autobaking(bpy.types.Operator):
                 link(image_node.outputs[0], principled_node.inputs['Metallic'])
 
             # Assign material to object
-            context.object.active_material = baked_material
-
+            BakedObj.active_material = baked_material
+            
         # Information
         self.report({'INFO'}, "Bake was successful, images were saved")
 
@@ -618,6 +796,7 @@ def register():
     bpy.utils.register_class(VIEW3D_PT_BAKER_bake)
     bpy.utils.register_class(VIEW3D_PT_BAKER_bake_submenu_advanced)
     bpy.utils.register_class(VIEW3D_PT_BAKER_bake_selected_to_active)
+    bpy.utils.register_class(VIEW3D_PT_BAKER_texture_packing)
     # operators
 
     bpy.utils.register_class(MESH_OT_autobaking)
@@ -635,7 +814,7 @@ def unregister():
     bpy.utils.unregister_class(VIEW3D_PT_BAKER_bake)
     bpy.utils.unregister_class(VIEW3D_PT_BAKER_bake_submenu_advanced)
     bpy.utils.unregister_class(VIEW3D_PT_BAKER_bake_selected_to_active)
-
+    bpy.utils.unregister_class(VIEW3D_PT_BAKER_texture_packing)
     # Operators
     bpy.utils.unregister_class(MESH_OT_autobaking)
 
