@@ -1,8 +1,6 @@
 # Baker-blender-addon
-Addon to automate blender baking process
+Addon to automate blender baking process and pack textures into rgb channels
 
-
-If you find this addon useful you can donate to my [paypal](https://www.paypal.com/paypalme/radovanstastny). (Addon is completly free, this is just if you want to support development)
 
 
 
